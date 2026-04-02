@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShotSort — AI-Powered Photo Cataloging Tool</title>
+<style>
+  :root {
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --sf-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    --bg: #000;
+    --surface: rgba(255,255,255,0.04);
+    --surface2: rgba(255,255,255,0.07);
+    --surface3: rgba(255,255,255,0.10);
+    --text: #f5f5f7;
+    --text2: rgba(245,245,247,0.72);
+    --text3: rgba(245,245,247,0.44);
+    --accent: #2997ff;
+    --border: rgba(255,255,255,0.10);
+    --border2: rgba(255,255,255,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sf); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    height:52px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 2.5rem;
+    background:rgba(0,0,0,0.72);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:0.5px solid rgba(255,255,255,0.12);
+  }
+  .nav-logo { font-size:17px; font-weight:600; letter-spacing:-0.3px; }
+  .nav-links { display:flex; gap:2rem; }
+  .nav-links a { font-size:13px; color:var(--text2); text-decoration:none; transition:color .2s; }
+  .nav-links a:hover { color:var(--text); }
+  .nav-cta { font-size:13px; color:var(--accent); text-decoration:none; }
+
+  /* HERO */
+  .hero {
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:7rem 2rem 5rem;
+    background:
+      radial-gradient(ellipse 80% 55% at 50% -5%, rgba(41,151,255,0.20) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 40% at 85% 30%, rgba(191,90,242,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 35% at 10% 70%, rgba(48,209,88,0.06) 0%, transparent 55%),
+      #000;
+  }
+  .eyebrow { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:400; color:var(--accent); margin-bottom:1.5rem; }
+  .eyebrow-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+
+  h1 {
+    font-size:clamp(52px,9vw,96px); font-weight:700; letter-spacing:-0.04em; line-height:1.0;
+    margin-bottom:.35rem;
+    background:linear-gradient(175deg, #f5f5f7 0%, rgba(245,245,247,.5) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero-sub { font-size:clamp(20px,3vw,28px); font-weight:400; color:var(--text2); letter-spacing:-0.02em; margin-bottom:1.75rem; }
+  .hero-desc { max-width:580px; font-size:17px; line-height:1.65; letter-spacing:-0.01em; color:var(--text3); margin:0 auto 2.5rem; }
+
+  .badges { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:3.5rem; }
+  .badge { padding:5px 14px; background:var(--surface2); border:0.5px solid var(--border); border-radius:100px; font-family:var(--sf-mono); font-size:12px; color:var(--text2); }
+
+  .hero-meta { display:flex; gap:3.5rem; justify-content:center; padding-top:2.5rem; border-top:0.5px solid var(--border2); width:100%; max-width:720px; margin:0 auto; }
+  .meta-item { text-align:center; }
+  .meta-lbl { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; color:var(--text3); margin-bottom:5px; }
+  .meta-val { font-size:14px; color:var(--text2); letter-spacing:-0.01em; }
+
+  /* LAYOUT */
+  section { padding:7rem 2.5rem; }
+  .cnt { max-width:980px; margin:0 auto; }
+  .divider { height:0.5px; background:var(--border2); }
+  .sec-eye { font-size:13px; font-weight:500; color:var(--accent); letter-spacing:.04em; text-transform:uppercase; margin-bottom:1rem; }
+  .sec-title { font-size:clamp(32px,4vw,48px); font-weight:700; letter-spacing:-0.03em; line-height:1.1; color:var(--text); margin-bottom:1rem; }
+  .sec-body { font-size:17px; line-height:1.65; letter-spacing:-0.01em; color:var(--text3); max-width:600px; }
+
+  /* BG VARIANTS */
+  .bg-a { background: radial-gradient(ellipse 60% 50% at 15% 50%, rgba(41,151,255,.07) 0%, transparent 60%), #0a0a0a; }
+  .bg-b { background: radial-gradient(ellipse 65% 55% at 85% 50%, rgba(191,90,242,.07) 0%, transparent 60%), #050505; }
+  .bg-c { background: radial-gradient(ellipse 70% 55% at 50% 100%, rgba(41,151,255,.10) 0%, transparent 60%), #000; }
+
+  /* GRID TILES */
+  .tile-grid { display:grid; gap:1px; background:var(--border2); border-radius:18px; overflow:hidden; border:0.5px solid var(--border); margin-top:4rem; }
+  .g2 { grid-template-columns:1fr 1fr; }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .g4 { grid-template-columns:repeat(4,1fr); }
+  .tile { background:var(--surface); padding:2rem; transition:background .25s; }
+  .tile:hover { background:var(--surface2); }
+  .tile-sm { padding:1.5rem; }
+
+  /* PROBLEM */
+  .problem-layout { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; margin-top:4rem; }
+  .prob-text p { font-size:17px; line-height:1.7; letter-spacing:-0.01em; color:var(--text3); margin-bottom:1.2rem; }
+  .prob-text p strong { color:var(--text); font-weight:500; }
+  .stat-num { font-size:40px; font-weight:700; letter-spacing:-0.04em; color:var(--text); line-height:1; margin-bottom:6px; }
+  .stat-num .u { font-size:22px; color:var(--text2); }
+  .stat-desc { font-size:13px; color:var(--text3); line-height:1.5; }
+
+  /* APPROACH CARDS */
+  .approach-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:1.25rem; }
+  .ib { background:rgba(41,151,255,.12); }
+  .ip { background:rgba(191,90,242,.12); }
+  .ig { background:rgba(48,209,88,.12); }
+  .card-num { font-family:var(--sf-mono); font-size:11px; color:var(--text3); margin-bottom:.6rem; }
+  .card-title { font-size:17px; font-weight:600; letter-spacing:-0.02em; color:var(--text); margin-bottom:.6rem; }
+  .card-body { font-size:14px; line-height:1.65; color:var(--text3); }
+
+  /* TECH */
+  .tech-name { font-family:var(--sf-mono); font-size:14px; font-weight:500; color:var(--accent); margin-bottom:4px; }
+  .tech-role { font-size:12px; color:var(--text3); }
+
+  /* PIPELINE */
+  .pipeline { margin-top:4rem; }
+  .pipe-step { display:grid; grid-template-columns:56px 1fr; gap:1.75rem; }
+  .pipe-inner { padding:2rem 0; border-bottom:0.5px solid var(--border2); }
+  .pipe-step:last-child .pipe-inner { border-bottom:none; }
+  .num-col { display:flex; flex-direction:column; align-items:center; padding-top:2rem; }
+  .step-num { width:36px; height:36px; border-radius:50%; background:var(--surface2); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:var(--sf-mono); font-size:12px; color:var(--accent); flex-shrink:0; z-index:1; }
+  .step-line { width:0.5px; flex:1; background:var(--border2); margin-top:8px; }
+  .pipe-step:last-child .step-line { display:none; }
+  .pipe-title { font-size:19px; font-weight:600; letter-spacing:-0.02em; color:var(--text); margin-bottom:.5rem; }
+  .pipe-body { font-size:15px; line-height:1.7; color:var(--text3); margin-bottom:.75rem; max-width:640px; }
+  .pipe-code { display:inline-block; background:rgba(41,151,255,.07); border:0.5px solid rgba(41,151,255,.2); border-radius:8px; padding:8px 14px; font-family:var(--sf-mono); font-size:12px; color:rgba(41,151,255,.9); }
+
+  /* FEATURES */
+  .feat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:1rem; background:var(--surface3); }
+  .feat-title { font-size:15px; font-weight:600; letter-spacing:-0.01em; color:var(--text); margin-bottom:6px; }
+  .feat-body { font-size:13px; line-height:1.65; color:var(--text3); }
+
+  /* RESULTS */
+  .res-num { font-size:56px; font-weight:700; letter-spacing:-0.04em; line-height:1; margin-bottom:8px; }
+  .res-acc { color:var(--accent); }
+  .res-lbl { font-size:14px; color:var(--text3); line-height:1.5; }
+  .result-tile { background:var(--surface); padding:3rem 2rem; text-align:center; }
+
+  .learn-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; margin-top:6px; }
+  .learn-text { font-size:14px; color:var(--text2); line-height:1.65; }
+  .learn-tile { background:var(--surface); padding:1.5rem 1.75rem; display:flex; gap:12px; align-items:flex-start; }
+
+  /* FOOTER */
+  .footer-wrap { max-width:980px; margin:0 auto; padding:3rem 2.5rem; border-top:0.5px solid var(--border2); display:flex; justify-content:space-between; align-items:center; }
+  .foot-name { font-size:19px; font-weight:600; letter-spacing:-0.02em; }
+  .foot-name span { color:var(--accent); }
+  .foot-info { font-size:13px; color:var(--text3); text-align:right; line-height:1.8; letter-spacing:-0.01em; }
+
+  /* FADE */
+  .fi { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+  .fi.vis { opacity:1; transform:none; }
+
+  @media(max-width:768px){
+    .problem-layout,.g2,.g3,.g4{grid-template-columns:1fr;}
+    .hero-meta{flex-wrap:wrap;gap:1.5rem;}
+    nav{padding:0 1.25rem;}
+    .nav-links{display:none;}
+    section{padding:5rem 1.25rem;}
+    .footer-wrap{flex-direction:column;gap:1.5rem;text-align:center;}
+    .foot-info{text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">ShotSort</div>
+  <div class="nav-links">
+    <a href="#problem">Problem</a>
+    <a href="#approach">Approach</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#results">Results</a>
+  </div>
+  <a class="nav-cta" href="#results">View Results ↓</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow"><span class="eyebrow-dot"></span>Independent Project — Self-Initiated</div>
+  <h1>ShotSort</h1>
+  <p class="hero-sub">AI-Powered Photo Cataloging Tool</p>
+  <p class="hero-desc">A personal project born from one simple frustration — thousands of disorganized photos with no way to find anything. Built end-to-end in Python using computer vision, machine learning, and SQL to automatically tag, catalog, and retrieve any photo in seconds.</p>
+  <div class="badges">
+    <span class="badge">Python</span><span class="badge">SQL</span><span class="badge">Scikit-learn</span><span class="badge">OpenCV</span><span class="badge">Tableau</span><span class="badge">Excel</span><span class="badge">Java</span><span class="badge">R</span><span class="badge">Pandas</span><span class="badge">SQLite</span><span class="badge">Pillow</span><span class="badge">Matplotlib</span>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item"><div class="meta-lbl">Author</div><div class="meta-val">Saaj Patel</div></div>
+    <div class="meta-item"><div class="meta-lbl">Institution</div><div class="meta-val">Rutgers University – New Brunswick</div></div>
+    <div class="meta-item"><div class="meta-lbl">Type</div><div class="meta-val">Self-Initiated</div></div>
+    <div class="meta-item"><div class="meta-lbl">Year</div><div class="meta-val">2024 – 2025</div></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PROBLEM -->
+<div class="bg-a" id="problem">
+<section><div class="cnt">
+  <div class="sec-eye fi">01 — The Problem</div>
+  <h2 class="sec-title fi">Photography creates<br>a cataloging nightmare.</h2>
+  <div class="problem-layout fi">
+    <div class="prob-text">
+      <p>As an avid photographer, I accumulated <strong>thousands of images</strong> across multiple shoots, devices, and folders. Finding a specific photo meant scrolling endlessly through unnamed files like <em>IMG_4872.jpg</em> with zero context.</p>
+      <p>Existing tools like Lightroom require <strong>manual tagging</strong> — a tedious process most photographers skip entirely. Cloud solutions offered limited search, no color analysis, and no local control over your data.</p>
+      <p>I wanted to build something that could <strong>think like a photographer</strong> — understanding composition, lighting, subject, and palette — and organize an entire library automatically.</p>
+    </div>
+    <div class="tile-grid g2">
+      <div class="tile tile-sm"><div class="stat-num">4,200<span class="u">+</span></div><div class="stat-desc">Personal photos completely unorganized before this project</div></div>
+      <div class="tile tile-sm"><div class="stat-num">~8<span class="u"> min</span></div><div class="stat-desc">Average time to find a specific photo manually</div></div>
+      <div class="tile tile-sm"><div class="stat-num">0</div><div class="stat-desc">Metadata tags on any photos before the pipeline ran</div></div>
+      <div class="tile tile-sm"><div class="stat-num">100<span class="u">%</span></div><div class="stat-desc">Self-taught — pure curiosity and iteration</div></div>
+    </div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<!-- APPROACH -->
+<div id="approach">
+<section><div class="cnt">
+  <div class="sec-eye fi">02 — The Approach</div>
+  <h2 class="sec-title fi">Three pillars of<br>intelligent organization.</h2>
+  <p class="sec-body fi">Rather than a simple file renamer, the goal was a system that understood images the way a human would — by subject, mood, light, and place.</p>
+  <div class="tile-grid g3 fi">
+    <div class="tile">
+      <div class="approach-icon ib">🧠</div>
+      <div class="card-num">01</div>
+      <div class="card-title">Computer Vision & AI Tagging</div>
+      <div class="card-body">Used OpenCV and a pre-trained ResNet model via Scikit-learn to classify subjects — people, landscapes, architecture, food, events — with a confidence score, automatically, without any manual input.</div>
+    </div>
+    <div class="tile">
+      <div class="approach-icon ip">🎨</div>
+      <div class="card-num">02</div>
+      <div class="card-title">Color Palette Extraction</div>
+      <div class="card-body">Built a K-Means clustering algorithm in Python to extract the top 5 dominant colors from every image and store them as hex values, enabling search by mood, tone, and palette.</div>
+    </div>
+    <div class="tile">
+      <div class="approach-icon ig">🗃️</div>
+      <div class="card-num">03</div>
+      <div class="card-title">SQL-Backed Metadata Engine</div>
+      <div class="card-body">Designed a normalized SQLite schema to store all extracted metadata — tags, colors, lighting scores, GPS EXIF data — making every attribute fully queryable and filterable at speed.</div>
+    </div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<!-- TECH -->
+<div class="bg-b">
+<section><div class="cnt">
+  <div class="sec-eye fi">03 — Tech Stack</div>
+  <h2 class="sec-title fi">Tools & technologies.</h2>
+  <div class="tile-grid g4 fi">
+    <div class="tile tile-sm"><div class="tech-name">Python</div><div class="tech-role">Core language & scripting</div></div>
+    <div class="tile tile-sm"><div class="tech-name">OpenCV</div><div class="tech-role">Image processing & HSV analysis</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Scikit-learn</div><div class="tech-role">ML classification & K-Means</div></div>
+    <div class="tile tile-sm"><div class="tech-name">SQLite / SQL</div><div class="tech-role">Metadata storage & queries</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Pillow</div><div class="tech-role">Image manipulation & reading</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Pandas</div><div class="tech-role">Data wrangling & export</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Tableau</div><div class="tech-role">Analytics dashboard</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Excel</div><div class="tech-role">Catalog export & reporting</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Java</div><div class="tech-role">File system watcher daemon</div></div>
+    <div class="tile tile-sm"><div class="tech-name">R</div><div class="tech-role">Statistical metadata analysis</div></div>
+    <div class="tile tile-sm"><div class="tech-name">EXIF Tools</div><div class="tech-role">GPS & camera metadata</div></div>
+    <div class="tile tile-sm"><div class="tech-name">Matplotlib</div><div class="tech-role">Color palette visualization</div></div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<!-- PIPELINE -->
+<div class="bg-a" id="pipeline">
+<section><div class="cnt">
+  <div class="sec-eye fi">04 — Build Pipeline</div>
+  <h2 class="sec-title fi">From raw files to<br>intelligent library.</h2>
+  <p class="sec-body fi">A six-stage automated pipeline processes every image from disk scan to fully cataloged, searchable record — zero human input required.</p>
+
+  <div class="pipeline fi">
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">01</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">Photo Ingestion & EXIF Extraction</div>
+        <div class="pipe-body">A Python script recursively scans a local directory, reads all image files (JPG, PNG, RAW), and extracts embedded EXIF metadata — camera model, aperture, shutter speed, ISO, GPS coordinates, and timestamp. Robust error handling catches missing or corrupted fields.</div>
+        <div class="pipe-code">exif_data = piexif.load(img_path) → gps, timestamp, camera_model, iso</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">02</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">Subject Classification with ResNet</div>
+        <div class="pipe-body">Each image is passed through a fine-tuned ResNet-based classifier via Scikit-learn's pipeline wrapper. The model outputs a primary subject tag — portrait, landscape, architecture, food, event, macro — with a confidence score stored per record.</div>
+        <div class="pipe-code">classifier.predict(feature_vector) → ["landscape", 0.91]</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">03</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">Lighting Condition Analysis</div>
+        <div class="pipe-body">OpenCV converts images to HSV color space and computes brightness and contrast histograms. Photos are labeled as golden hour, overcast, harsh midday, backlit, or low light — enabling photographers to filter by exact shooting conditions.</div>
+        <div class="pipe-code">cv2.cvtColor(img, cv2.COLOR_BGR2HSV) → brightness_score, lighting_label</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">04</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">Dominant Color Palette Extraction</div>
+        <div class="pipe-body">K-Means clustering (k=5) runs on pixel RGB values to extract the five dominant colors from each image. Stored as hex codes, enabling palette-based search — e.g., find all warm-toned golden hour photos in a single query.</div>
+        <div class="pipe-code">KMeans(n_clusters=5).fit(pixels) → ["#D4842A", "#F2C46D", "#1A3A5C", ...]</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">05</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">SQL Database Population & Indexing</div>
+        <div class="pipe-body">A normalized SQLite schema with tables for photos, tags, colors, and locations stores all pipeline outputs. Proper indexing on tag, date, and GPS fields ensures fast query performance across the full 4,200-photo library.</div>
+        <div class="pipe-code">INSERT INTO photos (path, subject, lighting, palette_hex, lat, lng, shot_at)</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="num-col"><div class="step-num">06</div><div class="step-line"></div></div>
+      <div class="pipe-inner">
+        <div class="pipe-title">Tableau Dashboard & Excel Export</div>
+        <div class="pipe-body">Tableau connects live to the SQLite database to visualize shoot frequency by month, top subjects, color palette trends, and location heat maps. Pandas generates a clean 18-column Excel catalog for sharing with clients or collaborators.</div>
+        <div class="pipe-code">pandas.to_excel(df, "catalog_export.xlsx") → 4,200 rows, 18 columns</div>
+      </div>
+    </div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<!-- FEATURES -->
+<div>
+<section><div class="cnt">
+  <div class="sec-eye fi">05 — Key Features</div>
+  <h2 class="sec-title fi">What ShotSort can do.</h2>
+  <div class="tile-grid g3 fi">
+    <div class="tile"><div class="feat-icon">🔍</div><div class="feat-title">Natural Language Search</div><div class="feat-body">Search your entire library in plain text — "golden hour portraits from last summer" — and get instant ranked results from the SQL index.</div></div>
+    <div class="tile"><div class="feat-icon">🗺️</div><div class="feat-title">Location-Based Grouping</div><div class="feat-body">GPS coordinates from EXIF data are parsed and grouped geographically, auto-creating albums by city, country, or custom radius.</div></div>
+    <div class="tile"><div class="feat-icon">🎨</div><div class="feat-title">Color Mood Filter</div><div class="feat-body">Filter photos by palette — warm, cool, monochrome, vibrant — using K-Means extracted dominant colors stored as searchable hex values.</div></div>
+    <div class="tile"><div class="feat-icon">☀️</div><div class="feat-title">Lighting Condition Labels</div><div class="feat-body">Every photo is scored and labeled by lighting type — golden hour, overcast, harsh sun, backlit, low light — helping recreate any look.</div></div>
+    <div class="tile"><div class="feat-icon">📊</div><div class="feat-title">Tableau Analytics Dashboard</div><div class="feat-body">A live dashboard shows shooting trends — most frequent subjects, monthly activity, top locations, and color palette evolution over time.</div></div>
+    <div class="tile"><div class="feat-icon">📁</div><div class="feat-title">Auto-Folder Organization</div><div class="feat-body">After classification, ShotSort optionally reorganizes your file system into a clean hierarchy by year → subject → lighting condition.</div></div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<!-- RESULTS -->
+<div class="bg-c" id="results">
+<section><div class="cnt">
+  <div class="sec-eye fi">06 — Results & Outcomes</div>
+  <h2 class="sec-title fi">What the project achieved.</h2>
+
+  <div class="tile-grid g3 fi">
+    <div class="result-tile"><div class="res-num"><span class="res-acc">4,200</span>+</div><div class="res-lbl">Photos auto-tagged and cataloged with zero manual input</div></div>
+    <div class="result-tile"><div class="res-num"><span class="res-acc">94</span>%</div><div class="res-lbl">Subject classification accuracy on personal test set</div></div>
+    <div class="result-tile"><div class="res-num">&lt;<span class="res-acc">3</span>s</div><div class="res-lbl">Average query time to retrieve any photo from full library</div></div>
+  </div>
+
+  <div class="sec-eye fi" style="margin-top:3.5rem;">What I Learned</div>
+  <div class="tile-grid g2 fi">
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Designed and implemented a full end-to-end ML pipeline from data ingestion to model output and storage — entirely self-taught through documentation and experimentation</div></div>
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Deepened SQL skills by designing a normalized relational schema and writing complex JOIN queries across 5 tables for fast photo retrieval</div></div>
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Applied K-Means clustering in a real-world visual context, learning its sensitivity to color space choice and initialization strategy</div></div>
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Built a Tableau dashboard connected to a live SQL source — translating raw metadata into meaningful visual analytics for non-technical audiences</div></div>
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Learned EXIF parsing edge cases — many photos had missing or corrupted GPS fields, requiring robust error handling and graceful fallback logic</div></div>
+    <div class="learn-tile"><div class="learn-dot"></div><div class="learn-text">Gained hands-on experience with Java file system watchers to build a real-time auto-import daemon that monitors new photo additions</div></div>
+  </div>
+</div></section>
+</div>
+
+<div class="divider"></div>
+
+<div style="background:#000;">
+<div class="footer-wrap">
+  <div>
+    <div class="foot-name">Saaj <span>Patel</span></div>
+    <div style="font-size:13px;color:var(--text3);margin-top:4px;letter-spacing:-0.01em;">B.S. Computer Science — Magna Cum Laude · Rutgers University</div>
+  </div>
+  <div class="foot-info">Class of 2025<br>saajpatel02@gmail.com</div>
+</div>
+</div>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('vis'); });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.fi').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
